@@ -1,5 +1,5 @@
 import sqlite3
-import face_recognition
+import face_recognition 
 import cv2
 import numpy as np
  
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS faces (
     encoding BLOB NOT NULL
 )
 """)
-conn.commit()
+conn.commit() # Complex technique
  
 def encode_face(image_path, name):
     """Encodes a face and stores it in the database."""
@@ -41,8 +41,8 @@ def encode_face(image_path, name):
 # Add known face
 # list of known faces
 faces = [
-    ("Faces/Veeran/Veeran1.jpg", "Hunny bunny"),
-    ("Faces/Noah/Noah1.jpg", "NOAH"),
+    ("fretboard-recognition/Faces/Noah/Noah1.jpg", "Noah"),
+    ("fretboard-recognition/Faces/Veeran/Veeran1.jpg", "Veeran"),
 ]
  
 for image_path, name in faces:
@@ -50,5 +50,3 @@ for image_path, name in faces:
  
  
 conn.close()
- 
- 

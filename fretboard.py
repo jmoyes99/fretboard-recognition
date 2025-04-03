@@ -1,13 +1,13 @@
 import sqlite3
-import face_recognition
+import face_recognition # Complex technique 
 import cv2
 import numpy as np
  
 # Connect to the SQLite database
 conn = sqlite3.connect("face_database.db")
 cursor = conn.cursor()
-
-# Load known face encodings from database
+ 
+# Load known faces
 cursor.execute("SELECT name, encoding FROM faces")
 known_faces = cursor.fetchall()
 known_names = []
@@ -17,7 +17,7 @@ for name, encoding in known_faces:
     known_names.append(name)
     known_encodings.append(np.frombuffer(encoding, dtype=np.float64))
  
-# Open a connection to the webcam
+# Connect to webcam
 video_capture = cv2.VideoCapture(1)
  
 video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -42,7 +42,7 @@ while True:
         matches = face_recognition.compare_faces(known_encodings, face_encoding)
         name = "Unknown"
  
-        # Find best match
+        # Find match
         if True in matches:
             match_index = matches.index(True)
             name = known_names[match_index]
@@ -58,7 +58,7 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
  
-# Release webcam and close windows
+# Close webcam and close windows
 video_capture.release()
 cv2.destroyAllWindows()
 conn.close()
