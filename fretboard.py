@@ -1,64 +1,55 @@
-import sqlite3
-import face_recognition # Complex technique 
 import cv2
 import numpy as np
- 
-# Connect to the SQLite database
-conn = sqlite3.connect("face_database.db")
-cursor = conn.cursor()
- 
-# Load known faces
-cursor.execute("SELECT name, encoding FROM faces")
-known_faces = cursor.fetchall()
-known_names = []
-known_encodings = []
- 
-for name, encoding in known_faces:
-    known_names.append(name)
-    known_encodings.append(np.frombuffer(encoding, dtype=np.float64))
- 
-# Connect to webcam
-video_capture = cv2.VideoCapture(1)
- 
-video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
- 
- 
+import tensorflow as tf
+
+# load the TFLite model
+interpreter = tf.lite.Interpreter(model_path="C:/111Programming/fretboard-recognition/model/converted_tflite/model.tflite")
+interpreter.allocate_tensors()
+
+# required step for tensor input and output
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
+
+# chord labels
+with open("C:/111Programming/fretboard-recognition/model/converted_tflite/labels.txt", "r") as f:
+    labels = [line.strip() for line in f.readlines()]
+
+# setting up webcam
+cap = cv2.VideoCapture(1)
+
+# general initialisation
+def preprocess(frame):
+    img = cv2.resize(frame, (224, 224))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = img.astype(np.float32) / 255.0
+    img = np.expand_dims(img, axis=0)
+    return img
+
+# primary loop
 while True:
-    # Capture a frame
-    ret, frame = video_capture.read()
+    ret, frame = cap.read()
     if not ret:
-        print("Failed to grab frame")
         break
- 
-    # Convert frame to RGB
-    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
- 
-    # Detect faces in the frame
-    face_locations = face_recognition.face_locations(rgb_frame)
-    face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
- 
-    for face_encoding, (top, right, bottom, left) in zip(face_encodings, face_locations):
-        matches = face_recognition.compare_faces(known_encodings, face_encoding)
-        name = "Unknown"
- 
-        # Find match
-        if True in matches:
-            match_index = matches.index(True)
-            name = known_names[match_index]
- 
-        # Draw rectangle and name
-        cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-        cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
- 
-    # Display the frame
-    cv2.imshow("Face Recognition", frame)
- 
-    # Exit when 'q' is pressed
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+
+# sends images to model and predicts likelihood of chords
+    input_data = preprocess(frame)
+    interpreter.set_tensor(input_details[0]['index'], input_data)
+    interpreter.invoke()
+    output_data = interpreter.get_tensor(output_details[0]['index'])[0]
+
+# interprets results
+    predicted_index = np.argmax(output_data)
+    confidence = output_data[predicted_index]
+    label = f"{labels[predicted_index]} ({confidence*100:.2f}%)"
+
+# displays chord names
+    cv2.putText(frame, label, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    cv2.imshow("Guitar Chord Recognition", frame)
+
+# ends program
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
- 
-# Close webcam and close windows
-video_capture.release()
+
+# closes webcam
+cap.release()
 cv2.destroyAllWindows()
-conn.close()

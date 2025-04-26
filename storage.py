@@ -41,6 +41,7 @@ def encode_face(image_path, name):
 # Add known face
 # list of known faces
 faces = [
+    ("fretboard-recognition/Faces/James/James1.jpg", "James"),
     ("fretboard-recognition/Faces/Noah/Noah1.jpg", "Noah"),
     ("fretboard-recognition/Faces/Veeran/Veeran1.jpg", "Veeran"),
 ]
